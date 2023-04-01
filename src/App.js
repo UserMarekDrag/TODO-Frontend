@@ -72,6 +72,14 @@ class App extends React.Component {
     var csrftoken = this.getCookie('csrftoken')
 
     var url = 'http://127.0.0.1:8000/api/task-create/'
+
+    if(this.state.editing == true){
+      url = `http://127.0.0.1:8000/api/task-update/${this.state.activeItem.id}/`;
+      this.setState({
+        editing:false
+      })
+    }
+
     fetch(url, {
       method:'POST',
       headers:{
@@ -94,8 +102,17 @@ class App extends React.Component {
     )
   }
 
+  startEdit(task){
+    this.setState({
+      activeItem:task,
+      editing:true,
+    })
+
+  }
+
   render(){
     var task = this.state.todoList
+    var self = this
     return(
         <div className="container">
 
@@ -124,7 +141,7 @@ class App extends React.Component {
                       </div>
 
                       <div style={{flex:1}}>
-                        <button className="btn btn-sm btn-outline-info">Edit</button>
+                        <button onClick={() => self.startEdit(task)} className="btn btn-sm btn-outline-info">Edit</button>
                       </div>
 
                       <div style={{flex:1}}>
