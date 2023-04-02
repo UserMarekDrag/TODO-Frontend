@@ -1,32 +1,34 @@
 import React from 'react';
 import './App.css';
 
+
 class App extends React.Component {
   constructor(props){
     super(props);
       this.state = {
         todoList:[],
         activeItem:{
-          id:null,
+          id:null, 
           title:'',
-          complated:false,
+          completed:false,
         },
         editing:false,
       }
-      this.fetchTask = this.fetchTask.bind(this)
-      this.handlChagne = this.handlChagne.bind(this)
+      this.fetchTasks = this.fetchTasks.bind(this)
+      this.handleChange = this.handleChange.bind(this)
       this.handleSubmit = this.handleSubmit.bind(this)
       this.getCookie = this.getCookie.bind(this)
       this.startEdit = this.startEdit.bind(this)
       this.deleteItem = this.deleteItem.bind(this)
+      this.strikeUnstrike = this.strikeUnstrike.bind(this)
   };
 
   getCookie(name) {
-    let cookieValue = null;
+    var cookieValue = null;
     if (document.cookie && document.cookie !== '') {
-        const cookies = document.cookie.split(';');
-        for (let i = 0; i < cookies.length; i++) {
-            const cookie = cookies[i].trim();
+        var cookies = document.cookie.split(';');
+        for (var i = 0; i < cookies.length; i++) {
+            var cookie = cookies[i].trim();
             // Does this cookie string begin with the name we want?
             if (cookie.substring(0, name.length + 1) === (name + '=')) {
                 cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
@@ -36,24 +38,24 @@ class App extends React.Component {
     }
     return cookieValue;
 }
-  
+
   componentWillMount(){
-    this.fetchTask()
+    this.fetchTasks()
   }
 
-  fetchTask(){
+  fetchTasks(){
     console.log('Fetching...')
 
     fetch('http://127.0.0.1:8000/api/task-list/')
-    .then(Response => Response.json())
-    .then(data =>
+    .then(response => response.json())
+    .then(data => 
       this.setState({
         todoList:data
       })
-    )
+      )
   }
 
-  handlChagne(e){
+  handleChange(e){
     var name = e.target.name
     var value = e.target.value
     console.log('Name:', name)
@@ -76,7 +78,7 @@ class App extends React.Component {
     var url = 'http://127.0.0.1:8000/api/task-create/'
 
     if(this.state.editing == true){
-      url = `http://127.0.0.1:8000/api/task-update/${this.state.activeItem.id}/`;
+      url = `http://127.0.0.1:8000/api/task-update/${ this.state.activeItem.id}/`
       this.setState({
         editing:false
       })
@@ -89,19 +91,18 @@ class App extends React.Component {
         'X-CSRFToken':csrftoken,
       },
       body:JSON.stringify(this.state.activeItem)
-    }).then((response) => {
-      this.fetchTask()
-      this.setState({
-        activeItem:{
-          id:null,
+    }).then((response)  => {
+        this.fetchTasks()
+        this.setState({
+           activeItem:{
+          id:null, 
           title:'',
-          complated:false,
+          completed:false,
         }
-      })
+        })
     }).catch(function(error){
       console.log('ERROR:', error)
-    }
-    )
+    })
   }
 
   startEdit(task){
@@ -109,7 +110,6 @@ class App extends React.Component {
       activeItem:task,
       editing:true,
     })
-
   }
 
   deleteItem(task){
@@ -123,56 +123,86 @@ class App extends React.Component {
       },
     }).then((response) =>{
 
-      this.fetchTask()
+      this.fetchTasks()
     })
   }
 
+
+  strikeUnstrike(task){
+
+    task.completed = !task.completed
+    var csrftoken = this.getCookie('csrftoken')
+    var url = `http://127.0.0.1:8000/api/task-update/${task.id}/`
+
+      fetch(url, {
+        method:'POST',
+        headers:{
+          'Content-type':'application/json',
+          'X-CSRFToken':csrftoken,
+        },
+        body:JSON.stringify({'completed': task.completed, 'title':task.title})
+      }).then(() => {
+        this.fetchTasks()
+      })
+
+    console.log('TASK:', task.completed)
+  }
+
   render(){
-    var task = this.state.todoList
+    var tasks = this.state.todoList
     var self = this
     return(
         <div className="container">
 
           <div id="task-container">
-            <div id="form-wrapper">
-              <form onSubmit={this.handleSubmit} id="form">
-                <div className="flex-wrapper">
-                  <div style={{flex: 6}}>
-                    <input onChange={this.handlChagne}  className="form-control" id="title" type="text" value={this.state.activeItem.title} name="title" placeholder='Add task'/>
-                  </div>
-                  
-                  <div style={{flex: 1}}>
-                    <input id="submit" className="btn btn-warning" type="submit" name="Add"/>
-                  </div>
-                </div>
-              </form>
+              <div  id="form-wrapper">
+                 <form onSubmit={this.handleSubmit}  id="form">
+                    <div className="flex-wrapper">
+                        <div style={{flex: 6}}>
+                            <input onChange={this.handleChange} className="form-control" id="title" value={this.state.activeItem.title} type="text" name="title" placeholder="Add task.." />
+                         </div>
 
-            </div>
-            <div id="list-wrapper">
-                {task.map(function(task, index){
-                  return(
-                    <div key={index} className="task-wrapper flex-wrapper">
-                      
-                      <div style={{flex:7}}>
-                        <span>{task.title}</span>
+                         <div style={{flex: 1}}>
+                            <input id="submit" className="btn btn-warning" type="submit" name="Add" />
+                          </div>
                       </div>
+                </form>
+             
+              </div>
 
-                      <div style={{flex:1}}>
-                        <button onClick={() => self.startEdit(task)} className="btn btn-sm btn-outline-info">Edit</button>
-                      </div>
+              <div  id="list-wrapper">         
+                    {tasks.map(function(task, index){
+                      return(
+                          <div key={index} className="task-wrapper flex-wrapper">
 
-                      <div style={{flex:1}}>
-                      <button onClick={() => self.deleteItem(task)} className="btn btn-sm btn-outline-dark delete">-</button>
-                      </div>
+                            <div onClick={() => self.strikeUnstrike(task)} style={{flex:7}}>
 
-                    </div>
-                  )
-                })}
-            </div>
+                                {task.completed == false ? (
+                                    <span>{task.title}</span>
+
+                                  ) : (
+
+                                    <strike>{task.title}</strike>
+                                  )}
+  
+                            </div>
+
+                            <div style={{flex:1}}>
+                                <button onClick={() => self.startEdit(task)} className="btn btn-sm btn-outline-info">Edit</button>
+                            </div>
+
+                            <div style={{flex:1}}>
+                                <button onClick={() => self.deleteItem(task)} className="btn btn-sm btn-outline-dark delete">-</button>
+                            </div>
+
+                          </div>
+                        )
+                    })}
+              </div>
           </div>
-
+          
         </div>
-    )
+      )
   }
 }
 
